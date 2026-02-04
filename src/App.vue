@@ -1,29 +1,28 @@
 <script setup lang="ts">
-import AccountForm from "./components/AccountForm.vue";
+import { provide } from "vue";
+import AccountsPage from "./components/AccountsPage.vue";
+import { useAccountsStore } from "./stores/accounts";
+
+const accountsStore = useAccountsStore();
+
+const handleAddAccount = () => {
+  accountsStore.addAccount();
+};
 </script>
 
 <template>
-  <div id="app">
-    <AccountForm />
-  </div>
+  <AccountsPage @add-account="handleAddAccount" />
 </template>
 
 <style>
 * {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
-    sans-serif;
-  background-color: #f5f5f5;
-  color: #333;
-}
-
-#app {
-  min-height: 100vh;
-  padding: 20px;
+  font-family: Arial, sans-serif;
+  background-color: #f8f9fa;
 }
 </style>

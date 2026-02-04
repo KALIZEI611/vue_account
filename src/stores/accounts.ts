@@ -75,12 +75,20 @@ export const useAccountsStore = defineStore("accounts", () => {
       password: "",
     };
     accounts.value.push(newAccount);
+    saveToStorage();
   };
-
   const updateAccount = (id: number, updatedFields: Partial<Account>) => {
     const index = accounts.value.findIndex((acc) => acc.id === id);
     if (index !== -1) {
       const account = accounts.value[index];
+
+      if (updatedFields.type === "LDAP" && account.type === "Локальная") {
+        account.password = null;
+      } else if (
+        updatedFields.type === "Локальная" &&
+        account.type === "LDAP"
+      ) {
+      }
 
       if (updatedFields.labels !== undefined) {
         const labelItems = updatedFields.labels
@@ -101,7 +109,6 @@ export const useAccountsStore = defineStore("accounts", () => {
         };
       }
 
-      // Сохраняем изменения в localStorage
       saveToStorage();
     }
   };
