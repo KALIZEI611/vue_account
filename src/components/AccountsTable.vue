@@ -1,47 +1,40 @@
 <script setup lang="ts">
 import { computed, ref, onMounted } from "vue";
-import { useAccountsStore, type Account } from "../stores/accounts";
+import useAccountsStore from "../stores/accounts";
+import type { Account } from "../stores/accounts";
 import AccountRow from "./AccountRow.vue";
 
 const accountsStore = useAccountsStore();
 
-const accountErrors = ref<
-  Record<number, Partial<Record<keyof Account, boolean>>>
->({});
+const accountValidity = ref<Record<number, boolean>>({});
 
 const accounts = computed(() => accountsStore.accounts);
 
+const canAddAccount = computed(() => {
+  return Object.values(accountValidity.value).every((isValid) => isValid);
+});
+
 const addAccount = () => {
-  accountsStore.addAccount();
+  if (canAddAccount.value) {
+    accountsStore.addAccount();
+  } else {
+    alert(
+      "Пожалуйста, исправьте ошибки в существующих учетных записях перед добавлением новой.",
+    );
+  }
 };
 
 const removeAccount = (id: number) => {
   accountsStore.removeAccount(id);
-  delete accountErrors.value[id];
+  delete accountValidity.value[id];
 };
 
 const handleUpdateAccount = (id: number, updatedFields: Partial<Account>) => {
   accountsStore.updateAccount(id, updatedFields);
 };
 
-const validateAccount = (account: Account) => {
-  const errors: Partial<Record<keyof Account, boolean>> = {};
-
-  if (!account.login.trim()) {
-    errors.login = true;
-  }
-
-  if (account.type === "Локальная" && !account.password) {
-    errors.password = true;
-  }
-
-  if (Object.keys(errors).length > 0) {
-    accountErrors.value[account.id] = errors;
-    return false;
-  } else {
-    delete accountErrors.value[account.id];
-    return true;
-  }
+const handleValidateAccount = (account: Account, isValid: boolean) => {
+  accountValidity.value[account.id] = isValid;
 };
 
 onMounted(() => {
@@ -50,48 +43,32 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="accounts-table">
-    <div class="hint">
-      <strong>Подсказка для поля "Метка":</strong> Вводите текстовые метки,
-      разделяя их знаком ; (точка с запятой)
+  <div class="accounts-list">
+    <div class="table-header">
+      <div class="header-cell">Метки</div>
+      <div class="header-cell">Тип записи</div>
+      <div class="header-cell">Логин</div>
+      <div class="header-cell">Пароль</div>
+      <div class="header-cell actions">🗑</div>
     </div>
 
-    <div class="accounts-list">
-      <div class="table-header">
-        <div class="header-cell">Метки</div>
-        <div class="header-cell">Тип записи</div>
-        <div class="header-cell">Логин</div>
-        <div class="header-cell">Пароль</div>
-        <div class="header-cell actions">🗑</div>
-      </div>
+    <AccountRow
+      v-for="account in accounts"
+      :key="account.id"
+      :account="account"
+      @update:account="handleUpdateAccount"
+      @remove="removeAccount"
+      @validate="handleValidateAccount"
+    />
 
-      <AccountRow
-        v-for="account in accounts"
-        :key="account.id"
-        :account="account"
-        :errors="accountErrors[account.id]"
-        @update:account="handleUpdateAccount"
-        @remove="removeAccount"
-        @validate="validateAccount"
-      />
+    <div v-if="accounts.length === 0" class="no-accounts">
+      Нет учетных записей. Нажмите "Добавить учетную запись", чтобы создать
+      первую.
     </div>
   </div>
 </template>
 
 <style scoped>
-.accounts-table {
-  font-family: Arial, sans-serif;
-}
-
-.hint {
-  background-color: #e9f1fa;
-  border-left: 4px solid #4caf50;
-  padding: 10px 15px;
-  margin-bottom: 20px;
-  font-size: 20px;
-  color: #666;
-}
-
 .accounts-list {
   border-radius: 4px;
   overflow: hidden;
@@ -114,9 +91,39 @@ onMounted(() => {
   text-align: center;
 }
 
+.no-accounts {
+  padding: 30px;
+  text-align: center;
+  color: #6c757d;
+  font-style: italic;
+  background-color: #f8f9fa;
+  border: 1px dashed #dee2e6;
+  margin-top: 10px;
+  border-radius: 4px;
+}
+
 @media (max-width: 1024px) {
+  .accounts-list {
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+  }
+
   .table-header {
     display: none;
+  }
+
+  .no-accounts {
+    margin: 0;
+    border: none;
+    border-top: 1px solid #dee2e6;
+    padding: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .no-accounts {
+    padding: 15px;
+    font-size: 14px;
   }
 }
 </style>

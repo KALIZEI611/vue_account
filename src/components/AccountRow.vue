@@ -52,35 +52,6 @@ watch(
   { immediate: true },
 );
 
-watch(
-  () => props.account.type,
-  (newType, oldType) => {
-    if (newType === "Локальная" && oldType === "LDAP") {
-      const restoredPassword = props.account.cachedPassword || "";
-      emit("update:account", props.account.id, {
-        password: restoredPassword,
-        cachedPassword: null, 
-      });
-    } else if (newType === "LDAP" && oldType === "Локальная") {
-      emit("update:account", props.account.id, {
-        password: null,
-        cachedPassword: props.account.password,
-      });
-    }
-  },
-);
-
-watch(
-  () => props.account.password,
-  (newPassword) => {
-    if (props.account.type === "Локальная") {
-      emit("update:account", props.account.id, {
-        cachedPassword: newPassword,
-      });
-    }
-  },
-);
-
 const handleLabelsChange = (value: string) => {
   emit("update:account", props.account.id, { labels: value });
 };
@@ -113,7 +84,7 @@ const handleRemove = () => {
 
 <template>
   <div
-    class="account-row"
+    class="account-row desktop-row"
     :class="{ 'invalid-row': Object.keys(validationMessages).length > 0 }"
   >
     <div class="cell">
@@ -178,14 +149,95 @@ const handleRemove = () => {
       </button>
     </div>
   </div>
+
+  <div
+    class="account-card mobile-card"
+    :class="{ 'invalid-row': Object.keys(validationMessages).length > 0 }"
+  >
+    <div class="card-row">
+      <div class="card-label">Метки:</div>
+      <div class="card-value">
+        <LabelsInput
+          v-model="account.labels"
+          :label-items="account.labelItems"
+          @update:model-value="handleLabelsChange"
+          @blur="handleBlur"
+          compact
+        />
+      </div>
+    </div>
+
+    <div class="card-row">
+      <div class="card-label">Тип:</div>
+      <div class="card-value">
+        <AccountTypeSelect
+          v-model="account.type"
+          @update:model-value="handleTypeChange"
+        />
+      </div>
+    </div>
+
+    <div class="card-row">
+      <div class="card-label">Логин:</div>
+      <div class="card-value">
+        <div class="input-with-validation">
+          <input
+            :value="account.login"
+            @input="handleLoginChange"
+            @blur="handleBlur"
+            type="text"
+            placeholder="Обязательное поле"
+            :class="{ error: validationMessages.login }"
+            maxlength="50"
+          />
+          <ValidationMessage
+            v-if="validationMessages.login"
+            :message="validationMessages.login"
+            type="error"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="card-row">
+      <div class="card-label">Пароль:</div>
+      <div class="card-value">
+        <div class="input-with-validation">
+          <PasswordInput
+            :model-value="account.password"
+            :error="!!validationMessages.password"
+            :is-local-account="account.type === 'Локальная'"
+            @update:model-value="handlePasswordChange"
+            @blur="handleBlur"
+          />
+          <ValidationMessage
+            v-if="validationMessages.password"
+            :message="validationMessages.password"
+            type="error"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="card-actions">
+      <button
+        @click="handleRemove"
+        class="delete-button"
+        title="Удалить учетную запись"
+      >
+        Удалить
+      </button>
+    </div>
+  </div>
 </template>
 
 <style scoped>
-.account-row {
+.account-row.desktop-row {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr 1fr 60px;
   padding: 15px 0;
   align-items: start;
+  border-bottom: 1px solid #dee2e6;
 }
 
 .invalid-row {
@@ -241,14 +293,66 @@ input:focus {
   background-color: #c82333;
 }
 
+.account-card.mobile-card {
+  display: none;
+  padding: 15px;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.account-card.mobile-card .delete-button {
+  width: auto;
+  height: auto;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+.card-row {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 15px;
+  gap: 5px;
+}
+
+.card-label {
+  font-weight: 600;
+  color: #495057;
+  font-size: 14px;
+}
+
+.card-value {
+  width: 100%;
+}
+
+.card-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
 @media (max-width: 1024px) {
-  .account-row {
-    grid-template-columns: 1fr;
-    gap: 10px;
+  .account-row.desktop-row {
+    display: none;
   }
 
-  .input-with-validation {
-    width: 100%;
+  .account-card.mobile-card {
+    display: block;
+  }
+}
+
+@media (max-width: 480px) {
+  .account-card.mobile-card {
+    padding: 12px;
+  }
+
+  .card-row {
+    margin-bottom: 12px;
+  }
+
+  input {
+    padding: 10px;
+    font-size: 16px; 
   }
 }
 </style>

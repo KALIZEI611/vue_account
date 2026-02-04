@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref } from "vue";
 
 interface Props {
   modelValue: string | null;
@@ -148,5 +148,23 @@ const handleInput = (event: Event) => {
   letter-spacing: 2px;
   display: block;
   padding: 9px 0;
+}
+
+@media (max-width: 768px) {
+  .password-input-wrapper input {
+    padding: 10px;
+    padding-right: 45px;
+    font-size: 16px;
+  }
+
+  .toggle-password {
+    right: 12px;
+    padding: 6px;
+  }
+
+  .password-hidden {
+    padding: 11px 0;
+    font-size: 18px;
+  }
 }
 </style>
