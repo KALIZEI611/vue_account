@@ -10,6 +10,7 @@ interface Props {
   labelItems: LabelItem[];
   placeholder?: string;
   error?: boolean;
+  compact?: boolean;
 }
 
 interface Emits {
@@ -19,6 +20,7 @@ interface Emits {
 const props = withDefaults(defineProps<Props>(), {
   placeholder: "Введите метки через ;",
   error: false,
+  compact: false,
 });
 
 const emit = defineEmits<Emits>();
@@ -39,15 +41,22 @@ const handleInput = (event: Event) => {
       :class="{ error }"
       maxlength="50"
     />
-    <div v-if="labelItems.length > 0" class="label-items">
+    <div v-if="labelItems.length > 0 && !compact" class="label-items">
       <span v-for="(item, idx) in labelItems" :key="idx" class="label-tag">
         {{ item.text }}
       </span>
+    </div>
+    <div v-else-if="labelItems.length > 0 && compact" class="compact-tags">
+      <span class="tag-count">{{ labelItems.length }} меток</span>
     </div>
   </div>
 </template>
 
 <style scoped>
+.labels-input {
+  width: 100%;
+}
+
 .labels-input input {
   width: 100%;
   padding: 8px 10px;
@@ -81,5 +90,27 @@ const handleInput = (event: Event) => {
   border-radius: 12px;
   font-size: 12px;
   color: #495057;
+}
+
+.compact-tags {
+  margin-top: 6px;
+}
+
+.tag-count {
+  font-size: 12px;
+  color: #6c757d;
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .labels-input input {
+    padding: 10px;
+    font-size: 16px;
+  }
+
+  .label-tag {
+    font-size: 11px;
+    padding: 3px 10px;
+  }
 }
 </style>

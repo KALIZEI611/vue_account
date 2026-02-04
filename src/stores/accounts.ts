@@ -69,53 +69,7 @@ export const validatePassword = (
 };
 
 export const useAccountsStore = defineStore("accounts", () => {
-  const accounts = ref<Account[]>([
-    {
-      id: 1,
-      labels: "XXX",
-      labelItems: [{ text: "XXX" }],
-      type: "Локальная",
-      login: "Значение",
-      password: "●●●●●●",
-    },
-    {
-      id: 2,
-      labels: "XXX; YYYYYYYYYY; IIIIIIII; MMMMMMMM",
-      labelItems: [
-        { text: "XXX" },
-        { text: "YYYYYYYYYY" },
-        { text: "IIIIIIII" },
-        { text: "MMMMMMMM" },
-      ],
-      type: "Локальная",
-      login: "Значение",
-      password: "●●●●●●",
-    },
-    {
-      id: 3,
-      labels: "XXX",
-      labelItems: [{ text: "XXX" }],
-      type: "Локальная",
-      login: "Значение",
-      password: "●●●●●●",
-    },
-    {
-      id: 4,
-      labels: "Значение",
-      labelItems: [{ text: "Значение" }],
-      type: "LDAP",
-      login: "Значение",
-      password: null,
-    },
-    {
-      id: 5,
-      labels: "Значение",
-      labelItems: [{ text: "Значение" }],
-      type: "LDAP",
-      login: "Значение",
-      password: null,
-    },
-  ]);
+  const accounts = ref<Account[]>([]);
 
   const accountsCount = computed(() => accounts.value.length);
 
