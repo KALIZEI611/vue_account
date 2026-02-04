@@ -15,7 +15,6 @@ export interface Account {
   cachedPassword?: string | null;
 }
 
-// Функция валидации логина
 export const validateLogin = (login: string): string | null => {
   if (!login.trim()) {
     return "Логин обязателен для заполнения";
@@ -29,7 +28,6 @@ export const validateLogin = (login: string): string | null => {
     return "Логин не должен превышать 50 символов";
   }
 
-  // Проверка на допустимые символы (только буквы, цифры, точки, дефисы, подчеркивания)
   const loginRegex = /^[a-zA-Z0-9._-]+$/;
   if (!loginRegex.test(login)) {
     return "Логин может содержать только буквы, цифры, точки, дефисы и подчеркивания";
@@ -38,13 +36,12 @@ export const validateLogin = (login: string): string | null => {
   return null;
 };
 
-// Функция валидации пароля
 export const validatePassword = (
   password: string | null,
   isLocalAccount: boolean,
 ): string | null => {
   if (!isLocalAccount) {
-    return null; // Для LDAP пароль не требуется
+    return null;
   }
 
   if (!password) {
@@ -59,7 +56,6 @@ export const validatePassword = (
     return "Пароль не должен превышать 100 символов";
   }
 
-  // Проверка на сложность пароля (опционально)
   const hasUpperCase = /[A-Z]/.test(password);
   const hasLowerCase = /[a-z]/.test(password);
   const hasNumbers = /\d/.test(password);
@@ -72,7 +68,6 @@ export const validatePassword = (
   return null;
 };
 
-// Хранилище
 export const useAccountsStore = defineStore("accounts", () => {
   const accounts = ref<Account[]>([
     {
@@ -142,6 +137,8 @@ export const useAccountsStore = defineStore("accounts", () => {
     if (index !== -1) {
       const account = accounts.value[index];
 
+      let updatedAccount: Account;
+
       if (updatedFields.labels !== undefined) {
         const labelItems = updatedFields.labels
           .split(";")
@@ -149,18 +146,19 @@ export const useAccountsStore = defineStore("accounts", () => {
           .filter((label) => label.length > 0)
           .map((text) => ({ text }));
 
-        accounts.value[index] = {
+        updatedAccount = {
           ...account,
           ...updatedFields,
           labelItems,
-        };
+        } as Account;
       } else {
-        accounts.value[index] = {
+        updatedAccount = {
           ...account,
           ...updatedFields,
-        };
+        } as Account;
       }
 
+      accounts.value[index] = updatedAccount;
       saveToStorage();
     }
   };
@@ -199,5 +197,4 @@ export const useAccountsStore = defineStore("accounts", () => {
   };
 });
 
-// Экспорт по умолчанию для совместимости
 export default useAccountsStore;
