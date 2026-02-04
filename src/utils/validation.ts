@@ -1,5 +1,3 @@
-import type { Account } from "../stores/accounts";
-
 export const validateLogin = (login: string): string | null => {
   if (!login.trim()) {
     return "Логин обязателен для заполнения";
@@ -52,6 +50,15 @@ export const validatePassword = (
   return null;
 };
 
+export interface Account {
+  id: number;
+  labels: string;
+  labelItems: { text: string }[];
+  type: "LDAP" | "Локальная";
+  login: string;
+  password: string | null;
+}
+
 export const validateAccount = (account: Account): Record<string, string> => {
   const errors: Record<string, string> = {};
 
@@ -89,7 +96,6 @@ export const canAddNewAccount = (accounts: Account[]): boolean => {
   }
 
   const allValid = accounts.every(isAccountValid);
-
   const noEmptyAccounts = !accounts.some(isEmptyAccount);
 
   return allValid && noEmptyAccounts;
