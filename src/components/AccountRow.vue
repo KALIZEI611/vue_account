@@ -1,38 +1,92 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
 import type { Account } from "../stores/accounts";
+import { validateLogin, validatePassword } from "../stores/accounts";
 import LabelsInput from "./LabelsInput.vue";
 import AccountTypeSelect from "./AccountTypeSelect.vue";
 import PasswordInput from "./PasswordInput.vue";
+import ValidationMessage from "./ValidationMessage.vue";
 
 interface Props {
   account: Account;
-  errors?: Partial<Record<keyof Account, boolean>>;
 }
 
 interface Emits {
   (e: "update:account", id: number, updatedFields: Partial<Account>): void;
   (e: "remove", id: number): void;
-  (e: "validate", account: Account): void;
+  (e: "validate", account: Account, isValid: boolean): void;
 }
 
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
-const previousPassword = ref<string | null>(null);
+// Храним сообщения об ошибках валидации
+const validationMessages = ref<Record<string, string>>({});
 
+// Вычисляемое свойство для ошибок валидации
+const validationErrors = computed(() => {
+  const errors: Record<string, string> = {};
+
+  // Валидация логина
+  const loginError = validateLogin(props.account.login);
+  if (loginError) {
+    errors.login = loginError;
+  }
+
+  // Валидация пароля
+  const passwordError = validatePassword(
+    props.account.password,
+    props.account.type === "Локальная",
+  );
+  if (passwordError) {
+    errors.password = passwordError;
+  }
+
+  return errors;
+});
+
+// Следим за изменениями валидационных ошибок
+watch(
+  validationErrors,
+  (newErrors) => {
+    validationMessages.value = newErrors;
+
+    // Отправляем событие с результатом валидации
+    const isValid = Object.keys(newErrors).length === 0;
+    emit("validate", props.account, isValid);
+  },
+  { immediate: true },
+);
+
+// Следим за изменениями типа учетной записи
 watch(
   () => props.account.type,
   (newType, oldType) => {
     if (newType === "Локальная" && oldType === "LDAP") {
-      const restoredPassword = previousPassword.value || "";
+      // При переключении с LDAP на локальную - восстанавливаем пароль из кэша
+      const restoredPassword = props.account.cachedPassword || "";
       emit("update:account", props.account.id, {
         password: restoredPassword,
+        cachedPassword: null, // Очищаем кэш после восстановления
       });
     } else if (newType === "LDAP" && oldType === "Локальная") {
-      previousPassword.value = props.account.password;
+      // При переключении с локальной на LDAP - сохраняем пароль в кэш
       emit("update:account", props.account.id, {
         password: null,
+        cachedPassword: props.account.password, // Сохраняем пароль в кэш
+      });
+    }
+  },
+);
+
+// Следим за изменениями пароля для сохранения в кэш
+watch(
+  () => props.account.password,
+  (newPassword) => {
+    // Если изменили пароль у локальной учетной записи, обновляем кэш
+    if (props.account.type === "Локальная") {
+      emit("update:account", props.account.id, {
+        cachedPassword: newPassword,
       });
     }
   },
@@ -44,20 +98,24 @@ const handleLabelsChange = (value: string) => {
 
 const handleLoginChange = (event: Event) => {
   const target = event.target as HTMLInputElement;
-  emit("update:account", props.account.id, { login: target.value });
+  const newLogin = target.value;
+
+  emit("update:account", props.account.id, { login: newLogin });
 };
 
 const handlePasswordChange = (value: string | null) => {
   emit("update:account", props.account.id, { password: value });
+};
 
-  // Если меняем пароль у локальной учетной записи - сохраняем его
-  if (props.account.type === "Локальная") {
-    previousPassword.value = value;
-  }
+const handleTypeChange = (value: Account["type"]) => {
+  emit("update:account", props.account.id, { type: value });
 };
 
 const handleBlur = () => {
-  emit("validate", props.account);
+  // При потере фокуса обновляем валидацию
+  const errors = validationErrors.value;
+  const isValid = Object.keys(errors).length === 0;
+  emit("validate", props.account, isValid);
 };
 
 const handleRemove = () => {
@@ -66,12 +124,14 @@ const handleRemove = () => {
 </script>
 
 <template>
-  <div class="account-row" :class="{ 'invalid-row': errors }">
+  <div
+    class="account-row"
+    :class="{ 'invalid-row': Object.keys(validationMessages).length > 0 }"
+  >
     <div class="cell">
       <LabelsInput
         v-model="account.labels"
         :label-items="account.labelItems"
-        :error="errors?.labels"
         @update:model-value="handleLabelsChange"
         @blur="handleBlur"
       />
@@ -80,33 +140,44 @@ const handleRemove = () => {
     <div class="cell">
       <AccountTypeSelect
         v-model="account.type"
-        :error="errors?.type"
-        @update:model-value="
-          (value) => emit('update:account', account.id, { type: value })
-        "
+        @update:model-value="handleTypeChange"
       />
     </div>
 
     <div class="cell">
-      <input
-        :value="account.login"
-        @input="handleLoginChange"
-        @blur="handleBlur"
-        type="text"
-        placeholder="Обязательное поле"
-        :class="{ error: errors?.login }"
-        maxlength="100"
-      />
+      <div class="input-with-validation">
+        <input
+          :value="account.login"
+          @input="handleLoginChange"
+          @blur="handleBlur"
+          type="text"
+          placeholder="Обязательное поле"
+          :class="{ error: validationMessages.login }"
+          maxlength="50"
+        />
+        <ValidationMessage
+          v-if="validationMessages.login"
+          :message="validationMessages.login"
+          type="error"
+        />
+      </div>
     </div>
 
     <div class="cell">
-      <PasswordInput
-        :model-value="account.password"
-        :error="errors?.password"
-        :is-local-account="account.type === 'Локальная'"
-        @update:model-value="handlePasswordChange"
-        @blur="handleBlur"
-      />
+      <div class="input-with-validation">
+        <PasswordInput
+          :model-value="account.password"
+          :error="!!validationMessages.password"
+          :is-local-account="account.type === 'Локальная'"
+          @update:model-value="handlePasswordChange"
+          @blur="handleBlur"
+        />
+        <ValidationMessage
+          v-if="validationMessages.password"
+          :message="validationMessages.password"
+          type="error"
+        />
+      </div>
     </div>
 
     <div class="cell actions">
@@ -135,6 +206,10 @@ const handleRemove = () => {
 
 .cell {
   padding: 0 15px;
+}
+
+.input-with-validation {
+  width: 100%;
 }
 
 input {
@@ -182,6 +257,10 @@ input:focus {
   .account-row {
     grid-template-columns: 1fr;
     gap: 10px;
+  }
+
+  .input-with-validation {
+    width: 100%;
   }
 }
 </style>
