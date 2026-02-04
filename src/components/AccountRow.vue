@@ -20,20 +20,16 @@ interface Emits {
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
-// Храним сообщения об ошибках валидации
 const validationMessages = ref<Record<string, string>>({});
 
-// Вычисляемое свойство для ошибок валидации
 const validationErrors = computed(() => {
   const errors: Record<string, string> = {};
 
-  // Валидация логина
   const loginError = validateLogin(props.account.login);
   if (loginError) {
     errors.login = loginError;
   }
 
-  // Валидация пароля
   const passwordError = validatePassword(
     props.account.password,
     props.account.type === "Локальная",
@@ -45,45 +41,38 @@ const validationErrors = computed(() => {
   return errors;
 });
 
-// Следим за изменениями валидационных ошибок
 watch(
   validationErrors,
   (newErrors) => {
     validationMessages.value = newErrors;
 
-    // Отправляем событие с результатом валидации
     const isValid = Object.keys(newErrors).length === 0;
     emit("validate", props.account, isValid);
   },
   { immediate: true },
 );
 
-// Следим за изменениями типа учетной записи
 watch(
   () => props.account.type,
   (newType, oldType) => {
     if (newType === "Локальная" && oldType === "LDAP") {
-      // При переключении с LDAP на локальную - восстанавливаем пароль из кэша
       const restoredPassword = props.account.cachedPassword || "";
       emit("update:account", props.account.id, {
         password: restoredPassword,
-        cachedPassword: null, // Очищаем кэш после восстановления
+        cachedPassword: null, 
       });
     } else if (newType === "LDAP" && oldType === "Локальная") {
-      // При переключении с локальной на LDAP - сохраняем пароль в кэш
       emit("update:account", props.account.id, {
         password: null,
-        cachedPassword: props.account.password, // Сохраняем пароль в кэш
+        cachedPassword: props.account.password,
       });
     }
   },
 );
 
-// Следим за изменениями пароля для сохранения в кэш
 watch(
   () => props.account.password,
   (newPassword) => {
-    // Если изменили пароль у локальной учетной записи, обновляем кэш
     if (props.account.type === "Локальная") {
       emit("update:account", props.account.id, {
         cachedPassword: newPassword,
@@ -112,7 +101,6 @@ const handleTypeChange = (value: Account["type"]) => {
 };
 
 const handleBlur = () => {
-  // При потере фокуса обновляем валидацию
   const errors = validationErrors.value;
   const isValid = Object.keys(errors).length === 0;
   emit("validate", props.account, isValid);
