@@ -98,7 +98,6 @@ const handleRemove = () => {
 </script>
 
 <template>
-  <!-- Десктопная версия -->
   <div
     class="account-row desktop-row"
     :class="{ 'invalid-row': Object.keys(validationMessages).length > 0 }"
@@ -166,7 +165,6 @@ const handleRemove = () => {
     </div>
   </div>
 
-  <!-- Мобильная версия (карточка) -->
   <div
     class="account-card mobile-card"
     :class="{ 'invalid-row': Object.keys(validationMessages).length > 0 }"

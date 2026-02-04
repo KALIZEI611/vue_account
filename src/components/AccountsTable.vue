@@ -52,7 +52,6 @@ onMounted(() => {
       @validate="handleValidateAccount"
     />
 
-    <!-- Сообщение если нет записей -->
     <div v-if="accounts.length === 0" class="no-accounts">
       Нет учетных записей. Нажмите "Добавить учетную запись", чтобы создать
       первую.
