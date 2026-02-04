@@ -2,6 +2,7 @@
 import { computed, ref, onMounted } from "vue";
 import useAccountsStore from "../stores/accounts";
 import type { Account } from "../stores/accounts";
+import { isEmptyAccount } from "../utils/validation";
 import AccountRow from "./AccountRow.vue";
 
 const accountsStore = useAccountsStore();
@@ -10,19 +11,9 @@ const accountValidity = ref<Record<number, boolean>>({});
 
 const accounts = computed(() => accountsStore.accounts);
 
-const canAddAccount = computed(() => {
-  return Object.values(accountValidity.value).every((isValid) => isValid);
+const hasEmptyNewAccount = computed(() => {
+  return accounts.value.some(isEmptyAccount);
 });
-
-const addAccount = () => {
-  if (canAddAccount.value) {
-    accountsStore.addAccount();
-  } else {
-    alert(
-      "Пожалуйста, исправьте ошибки в существующих учетных записях перед добавлением новой.",
-    );
-  }
-};
 
 const removeAccount = (id: number) => {
   accountsStore.removeAccount(id);
@@ -61,6 +52,7 @@ onMounted(() => {
       @validate="handleValidateAccount"
     />
 
+    <!-- Сообщение если нет записей -->
     <div v-if="accounts.length === 0" class="no-accounts">
       Нет учетных записей. Нажмите "Добавить учетную запись", чтобы создать
       первую.
@@ -102,6 +94,19 @@ onMounted(() => {
   border-radius: 4px;
 }
 
+.hint-message {
+  padding: 12px 15px;
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+  border-radius: 4px;
+  margin-top: 10px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 @media (max-width: 1024px) {
   .accounts-list {
     border: 1px solid #dee2e6;
@@ -112,7 +117,8 @@ onMounted(() => {
     display: none;
   }
 
-  .no-accounts {
+  .no-accounts,
+  .hint-message {
     margin: 0;
     border: none;
     border-top: 1px solid #dee2e6;
@@ -121,7 +127,8 @@ onMounted(() => {
 }
 
 @media (max-width: 480px) {
-  .no-accounts {
+  .no-accounts,
+  .hint-message {
     padding: 15px;
     font-size: 14px;
   }

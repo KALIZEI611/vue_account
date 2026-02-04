@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
 import type { Account } from "../stores/accounts";
-import { validateLogin, validatePassword } from "../stores/accounts";
+import { validateLogin, validatePassword } from "../utils/validation";
 import LabelsInput from "./LabelsInput.vue";
 import AccountTypeSelect from "./AccountTypeSelect.vue";
 import PasswordInput from "./PasswordInput.vue";
@@ -20,22 +20,33 @@ interface Emits {
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
+const touchedFields = ref<Record<string, boolean>>({
+  login: false,
+  password: false,
+});
+
 const validationMessages = ref<Record<string, string>>({});
 
 const validationErrors = computed(() => {
   const errors: Record<string, string> = {};
 
-  const loginError = validateLogin(props.account.login);
-  if (loginError) {
-    errors.login = loginError;
+  if (touchedFields.value.login || props.account.login) {
+    const loginError = validateLogin(props.account.login);
+    if (loginError) {
+      errors.login = loginError;
+    }
   }
 
-  const passwordError = validatePassword(
-    props.account.password,
-    props.account.type === "Локальная",
-  );
-  if (passwordError) {
-    errors.password = passwordError;
+  const shouldValidatePassword =
+    touchedFields.value.password || props.account.password;
+  if (shouldValidatePassword) {
+    const passwordError = validatePassword(
+      props.account.password,
+      props.account.type === "Локальная",
+    );
+    if (passwordError) {
+      errors.password = passwordError;
+    }
   }
 
   return errors;
@@ -51,6 +62,10 @@ watch(
   },
   { immediate: true },
 );
+
+const handleFieldBlur = (fieldName: keyof typeof touchedFields.value) => {
+  touchedFields.value[fieldName] = true;
+};
 
 const handleLabelsChange = (value: string) => {
   emit("update:account", props.account.id, { labels: value });
@@ -83,6 +98,7 @@ const handleRemove = () => {
 </script>
 
 <template>
+  <!-- Десктопная версия -->
   <div
     class="account-row desktop-row"
     :class="{ 'invalid-row': Object.keys(validationMessages).length > 0 }"
@@ -108,7 +124,7 @@ const handleRemove = () => {
         <input
           :value="account.login"
           @input="handleLoginChange"
-          @blur="handleBlur"
+          @blur="() => handleFieldBlur('login')"
           type="text"
           placeholder="Обязательное поле"
           :class="{ error: validationMessages.login }"
@@ -129,7 +145,7 @@ const handleRemove = () => {
           :error="!!validationMessages.password"
           :is-local-account="account.type === 'Локальная'"
           @update:model-value="handlePasswordChange"
-          @blur="handleBlur"
+          @blur="() => handleFieldBlur('password')"
         />
         <ValidationMessage
           v-if="validationMessages.password"
@@ -150,6 +166,7 @@ const handleRemove = () => {
     </div>
   </div>
 
+  <!-- Мобильная версия (карточка) -->
   <div
     class="account-card mobile-card"
     :class="{ 'invalid-row': Object.keys(validationMessages).length > 0 }"
@@ -184,7 +201,7 @@ const handleRemove = () => {
           <input
             :value="account.login"
             @input="handleLoginChange"
-            @blur="handleBlur"
+            @blur="() => handleFieldBlur('login')"
             type="text"
             placeholder="Обязательное поле"
             :class="{ error: validationMessages.login }"
@@ -208,7 +225,7 @@ const handleRemove = () => {
             :error="!!validationMessages.password"
             :is-local-account="account.type === 'Локальная'"
             @update:model-value="handlePasswordChange"
-            @blur="handleBlur"
+            @blur="() => handleFieldBlur('password')"
           />
           <ValidationMessage
             v-if="validationMessages.password"
@@ -352,7 +369,7 @@ input:focus {
 
   input {
     padding: 10px;
-    font-size: 16px; 
+    font-size: 16px;
   }
 }
 </style>

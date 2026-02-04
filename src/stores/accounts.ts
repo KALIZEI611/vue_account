@@ -15,61 +15,54 @@ export interface Account {
   cachedPassword?: string | null;
 }
 
-export const validateLogin = (login: string): string | null => {
-  if (!login.trim()) {
-    return "Логин обязателен для заполнения";
-  }
-
-  if (login.length < 3) {
-    return "Логин должен содержать минимум 3 символа";
-  }
-
-  if (login.length > 50) {
-    return "Логин не должен превышать 50 символов";
-  }
-
-  const loginRegex = /^[a-zA-Z0-9._-]+$/;
-  if (!loginRegex.test(login)) {
-    return "Логин может содержать только буквы, цифры, точки, дефисы и подчеркивания";
-  }
-
-  return null;
-};
-
-export const validatePassword = (
-  password: string | null,
-  isLocalAccount: boolean,
-): string | null => {
-  if (!isLocalAccount) {
-    return null;
-  }
-
-  if (!password) {
-    return "Пароль обязателен для локальных учетных записей";
-  }
-
-  if (password.length < 6) {
-    return "Пароль должен содержать минимум 6 символов";
-  }
-
-  if (password.length > 100) {
-    return "Пароль не должен превышать 100 символов";
-  }
-
-  const hasUpperCase = /[A-Z]/.test(password);
-  const hasLowerCase = /[a-z]/.test(password);
-  const hasNumbers = /\d/.test(password);
-  const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
-
-  if (!hasUpperCase || !hasLowerCase || !hasNumbers) {
-    return "Пароль должен содержать хотя бы одну заглавную букву, одну строчную букву и одну цифру";
-  }
-
-  return null;
-};
-
 export const useAccountsStore = defineStore("accounts", () => {
-  const accounts = ref<Account[]>([]);
+  const accounts = ref<Account[]>([
+    {
+      id: 1,
+      labels: "XXX",
+      labelItems: [{ text: "XXX" }],
+      type: "Локальная",
+      login: "Значение",
+      password: "●●●●●●",
+    },
+    {
+      id: 2,
+      labels: "XXX; YYYYYYYYYY; IIIIIIII; MMMMMMMM",
+      labelItems: [
+        { text: "XXX" },
+        { text: "YYYYYYYYYY" },
+        { text: "IIIIIIII" },
+        { text: "MMMMMMMM" },
+      ],
+      type: "Локальная",
+      login: "Значение",
+      password: "●●●●●●",
+    },
+    {
+      id: 3,
+      labels: "XXX",
+      labelItems: [{ text: "XXX" }],
+      type: "Локальная",
+      login: "Значение",
+      password: "●●●●●●",
+    },
+    {
+      id: 4,
+      labels: "Значение",
+      labelItems: [{ text: "Значение" }],
+      type: "LDAP",
+      login: "Значение",
+      password: null,
+    },
+    {
+      id: 5,
+      labels: "Значение",
+      labelItems: [{ text: "Значение" }],
+      type: "LDAP",
+      login: "Значение",
+      password: null,
+    },
+  ]);
 
   const accountsCount = computed(() => accounts.value.length);
 
